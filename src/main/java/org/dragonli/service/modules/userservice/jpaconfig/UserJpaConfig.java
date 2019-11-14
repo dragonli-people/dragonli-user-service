@@ -4,7 +4,7 @@ import org.dragonli.tools.configuration.DataSourceConfigurationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,15 +20,40 @@ import java.util.Map;
 
 @Configuration
 public class UserJpaConfig {
-    private static final String DATASOURCE = "DATASOURCE";
+    public static final String DATASOURCE_USER = "DATASOURCE_USER";
+    public static final String ENTITY_MANAGER_USER = "ENTITY_MANAGER_USER";
+    public static final String ENTITY_MANAGER_FACTORY_USER = "ENTITY_MANAGER_FACTORY_USER";
+    public static final String TRANSACTION_MANAGER_USER = "TRANSACTION_MANAGER_USER";
 
     @Autowired
-    @Qualifier("DATASOURCE")
+    @Qualifier(DATASOURCE_USER)
     private DataSource dataSource;
 
+    @Primary
+    @ConditionalOnProperty(value = "DS_USER_IS_PRIMARY")
+    @Bean
+    DataSource primaryDatasource(@Autowired @Qualifier(DATASOURCE_USER) DataSource ds){
+        return ds;
+    }
 
     @Primary
-    @Bean(name=DATASOURCE)
+    @ConditionalOnProperty(value = "DS_USER_IS_PRIMARY")
+    @Bean
+    public EntityManager primaryEntityManage(
+            @Autowired @Qualifier(ENTITY_MANAGER_USER) EntityManager em){
+        return em;
+    }
+
+    @Primary
+    @ConditionalOnProperty(value = "DS_USER_IS_PRIMARY")
+    @Bean
+    public PlatformTransactionManager primaryTransactionManagerBar(
+            @Autowired @Qualifier(TRANSACTION_MANAGER_USER) PlatformTransactionManager pm ) {
+        return pm;
+    }
+
+//    @Primary
+    @Bean(name= DATASOURCE_USER)
 //    @ConfigurationProperties("spring.assets-datasource")
     DataSource createAssetsDataSource(
         @Autowired DataSourceConfigurationUtil dataSourceConfigurationUtil,
@@ -43,8 +68,7 @@ public class UserJpaConfig {
 
             //数据源已有，开始配置jpa要素：LocalContainerEntityManagerFactoryBean，EntityManager，PlatformTransactionManager
 
-    @Primary
-    @Bean(name = "entityManager")
+    @Bean(name = ENTITY_MANAGER_USER)
     public EntityManager entityManager(
 //            @Autowired //不需要？？
                     EntityManagerFactoryBuilder builder ){
@@ -53,8 +77,8 @@ public class UserJpaConfig {
         return entityManagerFactory(builder).getObject().createEntityManager();
     }
 
-    @Primary
-    @Bean(name = "entityManagerFactory")
+//    @Primary
+    @Bean(name = ENTITY_MANAGER_FACTORY_USER)
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder) {
         //按网上，参数类型有问题。直接换成这种形式试试
         Map<String,Object> properties = new HashMap<>();
@@ -71,8 +95,8 @@ public class UserJpaConfig {
                 .properties(properties)//原本是(getVendorProperties())
                 .build();
     }
-    @Primary
-    @Bean(name = "transactionManager")
+//    @Primary
+    @Bean(name = TRANSACTION_MANAGER_USER)
     public PlatformTransactionManager transactionManagerBar(
             EntityManagerFactoryBuilder builder){
 //            @Autowired @Qualifier("entityManagerFactory") LocalContainerEntityManagerFactoryBean eb) {

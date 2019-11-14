@@ -4,12 +4,14 @@ import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import org.dragonli.service.general.interfaces.general.AuthDto;
 import org.dragonli.service.general.interfaces.general.AuthService;
 import org.dragonli.service.general.interfaces.general.OtherService;
 import org.dragonli.service.modules.user.interfaces.UserService;
 import org.dragonli.service.modules.userservice.ErrorCode;
 import org.dragonli.service.modules.userservice.entity.enums.UserStatus;
 import org.dragonli.service.modules.userservice.entity.models.UserEntity;
+import org.dragonli.service.modules.userservice.repository.CountryRepository;
 import org.dragonli.service.modules.userservice.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +44,13 @@ public class UserServiceImpl implements UserService {
     protected final static Random random = new Random();
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    CountryRepository countryRepository;
     @Reference
     AuthService authService;
     @Reference
     OtherService otherService;
-    @Autowired
-    private Environment environment;
-    private final String CHAINX_SERVICE_PAUSING = "CHAINX_SERVICE_PAUSING";
-    private final String CHAINX_SERVICE_PAUSING_INFO = "CHAINX_SERVICE_PAUSING_INFO";
+
     static final Pattern PATTERN_EMAIL = Pattern.compile(
             "^[_a-zA-Z0-9-\\\\+]+(\\.[_a-zA-Z0-9-]+)*@[\\.0-9A-z]+((.com)|(.net)|(.com.cn)|(.cn)|(.COM)|(.NET)|(.COM" +
                     ".CN)|(.CN))+$");
@@ -105,13 +106,15 @@ public class UserServiceImpl implements UserService {
         if (countryId == null || countryId <= 0) countryId = 1L;//todo
         if (recommendCode == null) recommendCode = "";
 
+        Long now = System.currentTimeMillis();
+
         UserEntity u = new UserEntity();
         u.setUsername(username);
         u.setNickname(nickname);
+        u.setEmail(email==null?"":email);
+        u.setPhone(phone==null?"":phone);
         u.setPasswd(newpw);
-        u.setPasswdCode(passwdCode);
-        u.setPhone(phone);
-        u.setEmail(email);
+        u.setPasswdCode(otherService.sha1(passwdCode));
         u.setStatus(UserStatus.ACTIVE);
         u.setPhoneCode("");
         u.setRegistTime(System.currentTimeMillis());
@@ -119,6 +122,9 @@ public class UserServiceImpl implements UserService {
         u.setCountryId(countryId);
         u.setPhoneValidated(false);
         u.setEmailValidated(false);
+        u.setCreatedAt(now);
+        u.setUpdatedAt(now);
+        u.setVersion(0);
 
         u = userRepository.save(u);
 
@@ -216,7 +222,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public Map<String, Object> resetPasswdByKey(String key, String code) throws Exception {
         Object findResult = findUserByUsernameOrEmailOrPhone(key);
-        if (!(findResult instanceof ErrorCode)) return createErrorResult((ErrorCode) findResult);
+        if (findResult instanceof ErrorCode) return createErrorResult((ErrorCode) findResult);
         return resetPasswd((UserEntity) findResult, code, null);
     }
 
@@ -237,7 +243,7 @@ public class UserServiceImpl implements UserService {
         if (passwdCode == null || "".equals(passwdCode = passwdCode.trim())) passwdCode = newPasswd;
         u.setValidataCode(null);
         u.setPasswd(newPasswd);
-        u.setPasswdCode(passwdCode);
+        u.setPasswdCode(otherService.sha1(passwdCode));
         u = userRepository.save(u);
         result.put("result", true);
         result.put("data", JSON.toJSON(u));
@@ -272,7 +278,7 @@ public class UserServiceImpl implements UserService {
         String npw = otherService.sha1(newpw);
         if (passwdCode == null) passwdCode = npw;
         u.setPasswd(npw);
-        u.setPasswdCode(passwdCode);
+        u.setPasswdCode(otherService.sha1(passwdCode));
         userRepository.save(u);
         result.put("result", true);
         result.put("data", JSON.toJSON(u));
@@ -347,6 +353,11 @@ public class UserServiceImpl implements UserService {
     }
 
     protected void doResetEmail(UserEntity u, String email, JSONObject result,Boolean setEmailValidated) {
+        Object findObject = findUserByUsernameOrEmailOrPhone(email);
+        if(findObject instanceof UserEntity) {
+            createErrorResult(ErrorCode.EMAIL_REPEAT,result);
+            return;
+        }
         u.setEmail(email);
         u.setEmailCode(null);
         if(setEmailValidated != null && setEmailValidated) u.setEmailValidated(true);
@@ -388,6 +399,11 @@ public class UserServiceImpl implements UserService {
     }
 
     protected void doResetPhone(UserEntity u, String phone, JSONObject result,Boolean setPhoneValidated) {
+        Object findObject = findUserByUsernameOrEmailOrPhone(phone);
+        if(findObject instanceof UserEntity) {
+            createErrorResult(ErrorCode.PHONE_REPEAT,result);
+            return;
+        }
         u.setPhone(phone);
         u.setPhoneCode(null);
         if(setPhoneValidated != null && setPhoneValidated) u.setPhoneValidated(true);
@@ -408,7 +424,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public JSONObject generateValidateCodeByUserId(String key) throws Exception {
         Object findResult = findUserByUsernameOrEmailOrPhone(key);
-        if (!(findResult instanceof ErrorCode)) return createErrorResult((ErrorCode) findResult);
+        if (findResult instanceof ErrorCode) return createErrorResult((ErrorCode) findResult);
         return doGenerateValidateCode((UserEntity) findResult);
     }
 
@@ -428,11 +444,23 @@ public class UserServiceImpl implements UserService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> generateEmailCodeById(Long uid,String newEmail) throws Exception {
+        UserEntity userEntity  = userRepository.get(uid);
+        if(userEntity == null) return createErrorResult(ErrorCode.USER_ID_NOT_EXSIT);
+        return generateEmailCode(userEntity,newEmail);
+    }
+
     @Transactional
     protected JSONObject generateEmailCode(UserEntity u,String newEmail) throws Exception {
         if(newEmail == null || "".equals(newEmail=newEmail.trim())
                 || !PATTERN_EMAIL.matcher(newEmail).matches())
             return createErrorResult(ErrorCode.EMAIL_FORMAT_ERROR);
+
+        Object findObject = findUserByUsernameOrEmailOrPhone(newEmail);
+        if(findObject instanceof UserEntity) return createErrorResult(ErrorCode.EMAIL_REPEAT);
+
 
         JSONObject result = new JSONObject();
         String code = generateCode(1000,9999).toString();
@@ -445,11 +473,22 @@ public class UserServiceImpl implements UserService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> generatePhoneCodeById(Long uid,String phone) throws Exception {
+        UserEntity userEntity  = userRepository.get(uid);
+        if(userEntity == null) return createErrorResult(ErrorCode.USER_ID_NOT_EXSIT);
+        return generatePhoneCode(userEntity,phone);
+    }
+
     @Transactional
     protected JSONObject generatePhoneCode(UserEntity u,String phone) throws Exception {
         if(phone == null || "".equals(phone=phone.trim())
                 || !PATTERN_PHONE.matcher(phone).matches())
             return createErrorResult(ErrorCode.PHONE_FORMAT_ERROR);
+
+        Object findObject = findUserByUsernameOrEmailOrPhone(phone);
+        if(findObject instanceof UserEntity) return createErrorResult(ErrorCode.PHONE_REPEAT);
 
         JSONObject result = new JSONObject();
         String code = generateCode(1000,9999).toString();
@@ -491,6 +530,46 @@ public class UserServiceImpl implements UserService {
 
     protected Integer generateCode(int base,int max){
         return random.nextInt(max-base+1);
+    }
+
+    @Transactional
+    @Override
+    public List<Map<String,Object>> allCountries(){
+        return countryRepository.findAll().stream().map(v->(JSONObject)JSON.toJSON(v)).collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public Map<String,Object> findCountryById(Long id){
+        return (JSONObject)JSON.toJSON( countryRepository.get(id) );
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> authValidateAndRefresh(Map<String, Object> authDto,Boolean refreshTime,Boolean autoGenerate){
+//        authService.generate()
+        return authValidateAndRefresh(authDto,refreshTime,autoGenerate);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> authValidateAndRefresh(Map<String, Object> authDto,Boolean refreshTime,Boolean autoGenerate, String privateKey,Long timeout){
+        JSONObject para = new JSONObject(authDto);
+        Long uid = para.getLong("uid");
+        if(uid <= 0) return authService.validateAndRefresh(authDto,refreshTime,autoGenerate,privateKey,timeout);
+        UserEntity userEntity = userRepository.get(uid);
+        String code = para.getString("code");
+        if(userEntity == null || code == null || !userEntity.getPasswdCode().equals(code))
+            return authService.generate(null,0L,"");
+        return authService.validateAndRefresh(authDto,refreshTime,autoGenerate,privateKey,timeout);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> authGenerate(Long uid) {
+        UserEntity userEntity = userRepository.get(uid);
+        if(userEntity==null) return authService.generate(null,0L,"");
+        return authService.generate(userEntity.getId().toString(),userEntity.getId(),userEntity.getPasswdCode());
     }
 
 }
