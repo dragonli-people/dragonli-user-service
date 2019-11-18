@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.dragonli.service</groupId>
 		<artifactId>dubbo-service-parent</artifactId>
-		<version>1.0.3</version>
+		<version>1.0.4</version>
 	</parent>
 
 	<artifactId>dragonli-user-service</artifactId>
@@ -17,6 +17,8 @@
 		<DATA_SOURCE_CONFIG_LOCAL></DATA_SOURCE_CONFIG_LOCAL>
 		<USER_NAME_REG>^[\u0010-\u007e\u4e00-\u9fa5]{3,12}$</USER_NAME_REG>
 		<PASSWD_REG>^[\u0010-\u007e]{8,20}$</PASSWD_REG>
+		<EMAIL_REG>^[_a-zA-Z0-9-\\+]+(\.[_a-zA-Z0-9-]+)*@[\.0-9A-z]+((\.com)|(\.net)|(\.com\.cn)|(\.cn)|(\.COM)|(\.NET)|(\.COM\.CN)|(\.CN))+$"</EMAIL_REG>
+		<PHONE_REG>^\d+$</PHONE_REG>
 	</properties>
 
 	<dependencies>
@@ -34,24 +36,18 @@
 			<version>1.0.4</version>
 		</dependency>
 
+
 		<dependency>
 			<groupId>org.dragonli.service</groupId>
-			<artifactId>dragonli-jpa-tools</artifactId>
+			<artifactId>dragonli-user-model-repository</artifactId>
 			<version>0.9.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.dragonli.service</groupId>
+					<artifactId>dragonli-java-tools</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-
 
 	</dependencies>
 

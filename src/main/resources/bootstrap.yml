@@ -19,3 +19,7 @@ USER_NAME_REG: @USER_NAME_REG@
 USER_NAME_REG_STR: ${service.micro-service.user-service.username-reg:${USER_NAME_REG}}
 PASSWD_REG: @PASSWD_REG@
 PASSWD_REG_STR: ${service.micro-service.user-service.passwd-reg:${PASSWD_REG}}
+EMAIL_REG: @EMAIL_REG@
+EMAIL_REG_STR: ${service.micro-service.user-service.email-reg:${EMAIL_REG}}
+PHONE_REG: @PHONE_REG@
+PHONE_REG_STR: ${service.micro-service.user-service.phone-reg:${PHONE_REG}}

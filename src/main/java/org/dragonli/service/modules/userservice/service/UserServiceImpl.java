@@ -4,7 +4,6 @@ import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import org.dragonli.service.general.interfaces.general.AuthDto;
 import org.dragonli.service.general.interfaces.general.AuthService;
 import org.dragonli.service.general.interfaces.general.OtherService;
 import org.dragonli.service.modules.user.interfaces.UserService;
@@ -17,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -33,6 +31,11 @@ public class UserServiceImpl implements UserService {
     String usernameRegStr;
     @Value("${PASSWD_REG_STR}")
     String passwdRegStr;
+    @Value("${EMAIL_REG_STR}")
+    String emailRegStr;
+    @Value("${PHONE_REG_STR}")
+    String phoneRegStr;
+
     @Value("${service.micro-service.user-service.validate-code-out-time:180000}")
     Long validateCodeOutTime;
     @Value("${service.micro-service.user-service.email-code-out-time:180000}")
@@ -89,9 +92,9 @@ public class UserServiceImpl implements UserService {
         if (errorCode == null && null != email && !"".equals(email = email.trim()) &&
                 null != userRepository.findByEmail(email)) errorCode = ErrorCode.EMAIL_REPEAT;
         if (errorCode == null && null != email && !"".equals(email = email.trim()) &&
-                !PATTERN_EMAIL.matcher(email).matches()) errorCode = ErrorCode.EMAIL_FORMAT_ERROR;
+                !Pattern.compile(emailRegStr).matcher(email).matches()) errorCode = ErrorCode.EMAIL_FORMAT_ERROR;
         if (errorCode == null && null != phone && !"".equals(phone = phone.trim()) &&
-                !PATTERN_PHONE.matcher(phone).matches()) errorCode = ErrorCode.PHONE_FORMAT_ERROR;
+                !Pattern.compile(phoneRegStr).matcher(phone).matches()) errorCode = ErrorCode.PHONE_FORMAT_ERROR;
         if (errorCode == null && !Pattern.compile(usernameRegStr).matcher(username).matches())
             errorCode = ErrorCode.USERNAME_FORMAT_ERROR;
         if (errorCode == null && !Pattern.compile(passwdRegStr).matcher(password).matches())
@@ -201,8 +204,8 @@ public class UserServiceImpl implements UserService {
         ErrorCode errorCode = null;
         UserEntity u = null;
         if (null == username || "".equals(username = username.trim())) errorCode = ErrorCode.ONE_OF_PARAS_IS_NULL;
-        boolean isMailFormat = PATTERN_EMAIL.matcher(username).matches();
-        boolean isPhoneFormat = PATTERN_PHONE.matcher(username).matches();
+        boolean isMailFormat = Pattern.compile(emailRegStr).matcher(username).matches();
+        boolean isPhoneFormat = Pattern.compile(phoneRegStr).matcher(username).matches();
         if (null == errorCode && u == null && isMailFormat) u = userRepository.findByEmail(username);
         if (null == errorCode && u == null && isPhoneFormat) u = userRepository.findByPhone(username);
         if (null == errorCode && u == null) u = userRepository.findByUsername(username);
@@ -331,7 +334,7 @@ public class UserServiceImpl implements UserService {
         ErrorCode errorCode = null;
 
         boolean dontValidate = newEmail != null && "".equals(newEmail = newEmail.trim());
-        if(dontValidate && !PATTERN_EMAIL.matcher(newEmail).matches())
+        if(dontValidate && !Pattern.compile(emailRegStr).matcher(newEmail).matches())
             return createErrorResult(ErrorCode.EMAIL_FORMAT_ERROR,result);
         if (dontValidate)
         {
@@ -375,7 +378,7 @@ public class UserServiceImpl implements UserService {
 
 
         boolean dontValidate = newPhone != null && "".equals(newPhone = newPhone.trim());
-        if(dontValidate && !PATTERN_PHONE.matcher(newPhone).matches())
+        if(dontValidate && !Pattern.compile(phoneRegStr).matcher(newPhone).matches())
             return createErrorResult(ErrorCode.PHONE_FORMAT_ERROR);
 
         ErrorCode errorCode = null;
@@ -455,7 +458,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     protected JSONObject generateEmailCode(UserEntity u,String newEmail) throws Exception {
         if(newEmail == null || "".equals(newEmail=newEmail.trim())
-                || !PATTERN_EMAIL.matcher(newEmail).matches())
+                || !Pattern.compile(emailRegStr).matcher(newEmail).matches())
             return createErrorResult(ErrorCode.EMAIL_FORMAT_ERROR);
 
         Object findObject = findUserByUsernameOrEmailOrPhone(newEmail);
@@ -484,7 +487,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     protected JSONObject generatePhoneCode(UserEntity u,String phone) throws Exception {
         if(phone == null || "".equals(phone=phone.trim())
-                || !PATTERN_PHONE.matcher(phone).matches())
+                || !Pattern.compile(phoneRegStr).matcher(phone).matches())
             return createErrorResult(ErrorCode.PHONE_FORMAT_ERROR);
 
         Object findObject = findUserByUsernameOrEmailOrPhone(phone);
