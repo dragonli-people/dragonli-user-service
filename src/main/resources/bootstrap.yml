@@ -13,8 +13,8 @@ spring:
 DS_USER_IS_PRIMARY: true
 
 # for package
-DATA_SOURCE_CONFIG: data-source-configs.user-db
-DATA_SOURCE_CONFIG_LOCAL: @DATA_SOURCE_CONFIG_LOCAL@
+USER_DATA_SOURCE_CONFIG: data-source-configs.user-db
+USER_DATA_SOURCE_CONFIG_LOCAL: @USER_DATA_SOURCE_CONFIG_LOCAL@
 USER_NAME_REG: @USER_NAME_REG@
 USER_NAME_REG_STR: ${service.micro-service.user-service.username-reg:${USER_NAME_REG}}
 PASSWD_REG: @PASSWD_REG@
