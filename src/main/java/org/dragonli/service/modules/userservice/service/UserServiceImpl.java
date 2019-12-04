@@ -569,7 +569,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public Map<String, Object> authGenerate(Long uid) {
-        UserEntity userEntity = userRepository.get(uid);
+        UserEntity userEntity = uid == null || uid.longValue() == 0 ? null : userRepository.get(uid);
         if(userEntity==null) return authService.generate(null,0L,"");
         return authService.generate(userEntity.getId().toString(),userEntity.getId(),userEntity.getPasswdCode());
     }
