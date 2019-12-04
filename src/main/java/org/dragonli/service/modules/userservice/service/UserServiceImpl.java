@@ -193,11 +193,10 @@ public class UserServiceImpl implements UserService {
     public Map<String, Object> findUser(Object key) {
         if (key == null) return null;
         UserEntity u = null;
-        if (key instanceof Long) return JSONObject.parseObject(JSON.toJSONString(userRepository.get((Long) key)));
+        if (key instanceof Long) u = userRepository.get((Long) key);
         if (key instanceof String)
-            return JSONObject.parseObject(JSON.toJSONString(findUserByUsernameOrEmailOrPhone((String) key)));
-
-        return null;
+            u = (UserEntity)findUserByUsernameOrEmailOrPhone((String) key);
+        return u == null ? null : JSONObject.parseObject(JSON.toJSONString(u));
     }
 
     protected Object findUserByUsernameOrEmailOrPhone(String username) {
