@@ -199,6 +199,14 @@ public class UserServiceImpl implements UserService {
         return u == null ? null : JSONObject.parseObject(JSON.toJSONString(u));
     }
 
+    @Transactional
+    @Override
+    public Map<String,Object> findUserByKeyword(String key){
+        Object u = findUserByUsernameOrEmailOrPhone( key);;
+        return u == null ? null : JSONObject.parseObject(JSON.toJSONString(u));
+    }
+
+
     protected Object findUserByUsernameOrEmailOrPhone(String username) {
         ErrorCode errorCode = null;
         UserEntity u = null;
