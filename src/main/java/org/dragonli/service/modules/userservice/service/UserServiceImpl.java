@@ -115,7 +115,7 @@ public class UserServiceImpl implements UserService {
         u.setUsername(username);
         u.setNickname(nickname);
         u.setEmail(email==null?"@"+username:email);
-        u.setPhone(phone==null?"@"+username:phone);
+        u.setPhone(phone==null?"#"+username:phone);
         u.setPasswd(newpw);
         u.setPasswdCode(otherService.sha1(passwdCode));
         u.setStatus(UserStatus.ACTIVE);
