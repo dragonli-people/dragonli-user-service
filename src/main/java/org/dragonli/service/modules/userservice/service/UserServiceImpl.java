@@ -564,6 +564,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public Map<String, Object> authValidateAndRefresh(Map<String, Object> authDto,Boolean refreshTime,Boolean autoGenerate, String privateKey,Long timeout){
+        logger.info("authDto:{},{},{}",authDto==null?null:JSON.toJSONString(authDto),refreshTime,autoGenerate);
         if(authDto == null)return authService.generate(null,0L,"");
         JSONObject para = new JSONObject(authDto);
         Long uid = para.getLong("uid");
