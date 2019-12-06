@@ -558,7 +558,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public Map<String, Object> authValidateAndRefresh(Map<String, Object> authDto,Boolean refreshTime,Boolean autoGenerate){
 //        authService.generate()
-        return authValidateAndRefresh(authDto,refreshTime,autoGenerate);
+        return authValidateAndRefresh(authDto,refreshTime,autoGenerate,null,null);
     }
 
     @Override
