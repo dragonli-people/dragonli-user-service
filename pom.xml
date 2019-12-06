@@ -15,7 +15,7 @@
 
 	<properties>
 		<USER_DATA_SOURCE_CONFIG_LOCAL></USER_DATA_SOURCE_CONFIG_LOCAL>
-		<USER_NAME_REG>^[\u0010-\u007e\u4e00-\u9fa5]{3,12}$</USER_NAME_REG>
+		<USER_NAME_REG>^[^@]+[\u0010-\u007e\u4e00-\u9fa5]{3,12}$</USER_NAME_REG>
 		<PASSWD_REG>^[\u0010-\u007e]{8,20}$</PASSWD_REG>
 		<EMAIL_REG>^[_a-zA-Z0-9-\\+]+(\.[_a-zA-Z0-9-]+)*@[\.0-9A-z]+((\.com)|(\.net)|(\.com\.cn)|(\.cn)|(\.COM)|(\.NET)|(\.COM\.CN)|(\.CN))+$"</EMAIL_REG>
 		<PHONE_REG>^\d+$</PHONE_REG>
