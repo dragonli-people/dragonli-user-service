@@ -114,8 +114,8 @@ public class UserServiceImpl implements UserService {
         UserEntity u = new UserEntity();
         u.setUsername(username);
         u.setNickname(nickname);
-        u.setEmail(email==null?"@"+username:email);
-        u.setPhone(phone==null?"#"+username:phone);
+        u.setEmail(email==null||email.trim().equals("")?"@"+username:email);
+        u.setPhone(phone==null||phone.trim().equals("")?"#"+username:phone);
         u.setPasswd(newpw);
         u.setPasswdCode(otherService.sha1(passwdCode));
         u.setStatus(UserStatus.ACTIVE);
